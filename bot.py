@@ -15,20 +15,32 @@ def get_tweet_rating(tweet):
     return (tweet['retweet_count'] * 2) + tweet['favourites_count']
 
 
+@bot.message_handler()
+def description(message):
+    pass
+
+
 @bot.message_handler(func=lambda m: True)
 def search(message):
     result = requests.get(LOKLAK_API_URL.format(query=message.text))
     tweets = json.loads(result.text)['statuses']
+    if tweets:
+        # Find the best tweet for this search query,
+        # by using sorting
+        tweets.sort(key=get_tweet_rating, reverse=True)
+        tweet = '"{message}" - {author} \n\n{link}'.format(
+            message=tweets[0]['text'],
+            author=tweets[0]['screen_name'],
+            link=tweets[0]['link']
+        )
+        bot.reply_to(message, tweet)
+    else:
+        bot.reply_to(message, 'Not found')
 
-    # Find the best tweet for this search query,
-    # by using sorting
-    tweets.sort(key=get_tweet_rating, reverse=True)
-    tweet = '"{message}" - {author} \n\n{link}'.format(
-        message=tweets[0]['text'],
-        author=tweets[0]['screen_name'],
-        link=tweets[0]['link']
-    )
-    bot.reply_to(message, tweet)
+
+@bot.message_handler()
+    def description(message):
+        pass')
 
 bot.polling()
 
