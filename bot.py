@@ -5,6 +5,7 @@ import telebot
 LOKLAK_API_URL = "http://loklak.org/api/search.json?q={query}"
 
 bot = telebot.TeleBot("162563966:AAHRx_KauVWfNrS9ADn099kjxqGNB_jqzgo")
+user_results = {}
 
 
 def get_tweet_rating(tweet):
@@ -12,6 +13,19 @@ def get_tweet_rating(tweet):
     Function that count tweet rating based on favourites and retweets
     """
     return (tweet['retweet_count'] * 2) + tweet['favourites_count']
+
+
+def tweet_answer(tweet, tweets_left):
+    """
+    Function that making text answer from tweet object
+    """
+    answer = '"{message}" - {author} \n\n{link}\n\n{more} more tweets. /next_tweet'.format(
+        message=tweet['text'],
+        author=tweet['screen_name'],
+        link=tweet['link'],
+        more=tweets_left
+    )
+    return answer
 
 
 @bot.message_handler(commands=['start', 'help'])
@@ -25,6 +39,16 @@ def description(message):
     )
 
 
+@bot.message_handler(commands=['next-tweet', 'next_tweet'])
+def next_tweet(message):
+    user_id = message.fromUser.id
+    if user_id in user_results and user_results[user_id]:
+        tweet = user_results[user_id].pop()
+        bot.reply_to(message, tweet_answer(tweet, len(user_results[user_id])))
+    else:
+        bot.reply_to(message, "You haven't searched anything.")
+
+
 @bot.message_handler(func=lambda m: True)
 def search(message):
     result = requests.get(LOKLAK_API_URL.format(query=message.text))
@@ -32,13 +56,10 @@ def search(message):
     if tweets:
         # Find the best tweet for this search query,
         # by using sorting
-        tweets.sort(key=get_tweet_rating, reverse=True)
-        tweet = '"{message}" - {author} \n\n{link}'.format(
-            message=tweets[0]['text'],
-            author=tweets[0]['screen_name'],
-            link=tweets[0]['link']
-        )
-        bot.reply_to(message, tweet)
+        tweets.sort(key=get_tweet_rating)
+        tweet = tweets.pop()
+        user_results[message.fromUser.id] = tweets
+        bot.reply_to(message, tweet_answer(tweet, len(tweets)))
     else:
         bot.reply_to(message, 'Not found')
 
