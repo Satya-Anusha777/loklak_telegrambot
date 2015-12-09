@@ -1,4 +1,3 @@
-import datetime
 import json
 import requests
 import telebot
@@ -15,9 +14,15 @@ def get_tweet_rating(tweet):
     return (tweet['retweet_count'] * 2) + tweet['favourites_count']
 
 
-@bot.message_handler()
+@bot.message_handler(commands=['start', 'help'])
 def description(message):
-    pass
+    bot.reply_to(message,
+        "loklak.org bot - simple Telegram bot for searching tweets.\n"
+        "Just send a message with your query and bot will process it, "
+        "using loklag.org API. \n"
+        "If you want to contribute, project is open source: "
+        "https://github.com/sevazhidkov/tweets-search-bot"
+    )
 
 
 @bot.message_handler(func=lambda m: True)
@@ -36,11 +41,6 @@ def search(message):
         bot.reply_to(message, tweet)
     else:
         bot.reply_to(message, 'Not found')
-
-
-@bot.message_handler()
-    def description(message):
-        pass')
 
 bot.polling()
 
