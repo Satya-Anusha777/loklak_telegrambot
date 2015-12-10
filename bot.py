@@ -52,7 +52,11 @@ def next_tweet(message):
 @bot.message_handler(func=lambda m: True)
 def search(message):
     result = requests.get(LOKLAK_API_URL.format(query=message.text))
-    tweets = json.loads(result.text)['statuses']
+    try:
+        tweets = json.loads(result.text)['statuses']
+    except ValueError:
+        bot.reply_to(message, 'Not found')
+        return
     if tweets:
         # Find the best tweet for this search query,
         # by using sorting
