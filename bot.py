@@ -41,7 +41,7 @@ def description(message):
 
 @bot.message_handler(commands=['next-tweet', 'next_tweet'])
 def next_tweet(message):
-    user_id = message.fromUser.id
+    user_id = message.from_user.id
     if user_id in user_results and user_results[user_id]:
         tweet = user_results[user_id].pop()
         bot.reply_to(message, tweet_answer(tweet, len(user_results[user_id])))
@@ -58,10 +58,16 @@ def search(message):
         # by using sorting
         tweets.sort(key=get_tweet_rating)
         tweet = tweets.pop()
-        user_results[message.fromUser.id] = tweets
+        user_results[message.from_user.id] = tweets
         bot.reply_to(message, tweet_answer(tweet, len(tweets)))
     else:
-        bot.reply_to(message, 'Not found')
+        # Delete words from message until result is not avaliable
+        words = message.text.split()[:-1]
+        if words:
+            message.text = ' '.join(words)
+            search(message)
+        else:
+            bot.reply_to(message, 'Not found')
 
 bot.polling()
 
