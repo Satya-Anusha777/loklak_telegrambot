@@ -56,7 +56,6 @@ def search(message):
     try:
         tweets = json.loads(result.text)['statuses']
     except ValueError:
-        bot.reply_to(message, 'Not found')
         return
     if tweets:
         # Find the best tweet for this search query,
@@ -75,7 +74,3 @@ def search(message):
             bot.reply_to(message, 'Not found')
 
 bot.polling()
-
-# Do not stop main thread
-while True:
-    pass
