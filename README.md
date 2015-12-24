@@ -1,5 +1,5 @@
 # Tweets search bot
-Telegram bot for searching tweets by Loklak API
+Telegram bot for searching tweets by Loklak API: https://telegram.me/loklakbot
 ## Install
 ```
 git clone git@github.com:sevazhidkov/tweets-search-bot.git
