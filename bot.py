@@ -4,10 +4,11 @@ import requests
 import telebot
 import re
 from telebot import types
-from token import TOKEN
+from token_list import TOKEN1
+
 LOKLAK_API_URL = "http://loklak.org/api/search.json?q={query}"
 #put your token in the line below PUT YOUR TOKEN HERE
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN1)
 user_results = {}
 
 
@@ -54,13 +55,19 @@ def next_tweet(message):
 def user_search(message):
     query_msg = message.text
     baseURL = "http://loklak.org/api/search.json?q=from:"
+    base_infoURL = "http://loklak.org/api/user.json?screen_name="
     pattern = re.compile("/user:(.+)")
     mtch = pattern.match(query_msg)
     if mtch:
         username = mtch.group(1)
         raw = requests.get(baseURL + username)
+        info_raw = requests.get(base_infoURL + username)
         try:
             tweets = json.loads(raw.text)['statuses']
+            info = json.loads(info_raw.text)['user']
+            time_zone = info['time_zone']
+            profile_image = info['profile_image_url']
+            friends_num = info['friends_count']
         except ValueError:
             return
         if tweets:
@@ -68,9 +75,14 @@ def user_search(message):
             tweet = tweets.pop()
             user_results[message.from_user.id] = tweets
             #show a botton on top of input
-            markup = types.ReplyKeyboardMarkup(row_width=2)
+            markup = types.ReplyKeyboardMarkup(row_width=1)
             markup.add('/next-tweet')
-            bot.reply_to(message, "From user:" + username + "\n" + tweet_answer(tweet, len(tweets)), reply_markup=markup)
+            full_text = ""
+            full_text += "Username:" + username + "\n"
+            full_text += "Profile Picture:" + profile_image + "\n"
+            full_text += "Friends Number:" + str(friends_num) + "\n"
+            full_text += tweet_answer(tweet, len(tweets))
+            bot.reply_to(message, full_text, reply_markup=markup)
         else:
             bot.reply_to(message, "Error in find a user, make sure you are in a correct format. \"user:USERNAME\"")
     else:
