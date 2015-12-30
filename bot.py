@@ -2,11 +2,12 @@ import os
 import json
 import requests
 import telebot
-
+from telebot import types
 LOKLAK_API_URL = "http://loklak.org/api/search.json?q={query}"
 
-bot = telebot.TeleBot(os.environ['LOKLAK_TELEGRAM_TOKEN'])
+bot = telebot.TeleBot("")
 user_results = {}
+
 
 
 def get_tweet_rating(tweet):
@@ -20,7 +21,7 @@ def tweet_answer(tweet, tweets_left):
     """
     Function that making text answer from tweet object
     """
-    answer = '"{message}" - {author} \n\n{link}\n\n{more} more tweets. /next_tweet'.format(
+    answer = '"{message}" - {author} \n\n{link}\n\n{more} more tweets.'.format(
         message=tweet['text'],
         author=tweet['screen_name'],
         link=tweet['link'],
@@ -38,8 +39,6 @@ def description(message):
         "If you want to contribute, project is open source: "
         "https://github.com/sevazhidkov/tweets-search-bot"
     )
-
-
 @bot.message_handler(commands=['next-tweet', 'next_tweet'])
 def next_tweet(message):
     user_id = message.from_user.id
@@ -52,7 +51,8 @@ def next_tweet(message):
 
 @bot.message_handler(func=lambda m: True)
 def search(message):
-    result = requests.get(LOKLAK_API_URL.format(query=message.text))
+    query_msg = message.text.lower()
+    result = requests.get(LOKLAK_API_URL.format(query=query_msg))
     try:
         tweets = json.loads(result.text)['statuses']
     except ValueError:
@@ -63,14 +63,23 @@ def search(message):
         tweets.sort(key=get_tweet_rating)
         tweet = tweets.pop()
         user_results[message.from_user.id] = tweets
-        bot.reply_to(message, tweet_answer(tweet, len(tweets)))
+        #show a botton on top of input
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        markup.add('/next-tweet')
+        bot.reply_to(message, tweet_answer(tweet, len(tweets)), reply_markup=markup)
     else:
         # Delete words from message until result is not avaliable
-        words = message.text.split()[:-1]
-        if words:
-            message.text = ' '.join(words)
+        #Strategy: keep removing the smallest word in a sentence
+        words = query_msg.split()
+        if(len(words) > 1):
+            words.sort(key = len)
+            del words[0]
+            reconstructed = ""
+            for word in words:
+                reconstructed += word + " "
+            message.text = reconstructed
             search(message)
         else:
-            bot.reply_to(message, 'Not found')
+            bot.reply_to(message, '404 Not found')
 
 bot.polling()
