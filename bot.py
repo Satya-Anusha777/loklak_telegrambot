@@ -4,9 +4,10 @@ import requests
 import telebot
 import re
 from telebot import types
+from token import TOKEN
 LOKLAK_API_URL = "http://loklak.org/api/search.json?q={query}"
 #put your token in the line below PUT YOUR TOKEN HERE
-bot = telebot.TeleBot("PUT YOUR TOKEN HERE")
+bot = telebot.TeleBot(TOKEN)
 user_results = {}
 
 

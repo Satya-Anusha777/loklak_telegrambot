@@ -10,4 +10,4 @@ pip install -r requirements.txt
 ```
 python bot.py
 ```
-Don't forget to change your telegram bot token. It is in bot.py file.
+Don't forget to change your telegram bot token. It is in token.py file.
