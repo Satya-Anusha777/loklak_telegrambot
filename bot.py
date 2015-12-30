@@ -2,9 +2,10 @@ import os
 import json
 import requests
 import telebot
+import re
 from telebot import types
 LOKLAK_API_URL = "http://loklak.org/api/search.json?q={query}"
-#put your token in the line below
+#put your token in the line below PUT YOUR TOKEN HERE
 bot = telebot.TeleBot("PUT YOUR TOKEN HERE")
 user_results = {}
 
@@ -37,7 +38,8 @@ def description(message):
         "Just send a message with your query and bot will process it, "
         "using loklag.org API. \n"
         "If you want to contribute, project is open source: "
-        "https://github.com/sevazhidkov/tweets-search-bot"
+        "https://github.com/sevazhidkov/tweets-search-bot\n"
+        "You can search a particular user's entire tweets by enter \"/user:USERNAME\""
     )
 @bot.message_handler(commands=['next-tweet', 'next_tweet'])
 def next_tweet(message):
@@ -47,11 +49,35 @@ def next_tweet(message):
         bot.reply_to(message, tweet_answer(tweet, len(user_results[user_id])))
     else:
         bot.reply_to(message, "You haven't searched anything.")
-
+@bot.message_handler(regexp="/user:.+")
+def user_search(message):
+    query_msg = message.text
+    baseURL = "http://loklak.org/api/search.json?q=from:"
+    pattern = re.compile("/user:(.+)")
+    mtch = pattern.match(query_msg)
+    if mtch:
+        username = mtch.group(1)
+        raw = requests.get(baseURL + username)
+        try:
+            tweets = json.loads(raw.text)['statuses']
+        except ValueError:
+            return
+        if tweets:
+            tweets.sort(key=get_tweet_rating)
+            tweet = tweets.pop()
+            user_results[message.from_user.id] = tweets
+            #show a botton on top of input
+            markup = types.ReplyKeyboardMarkup(row_width=2)
+            markup.add('/next-tweet')
+            bot.reply_to(message, "From user:" + username + "\n" + tweet_answer(tweet, len(tweets)), reply_markup=markup)
+        else:
+            bot.reply_to(message, "Error in find a user, make sure you are in a correct format. \"user:USERNAME\"")
+    else:
+        bot.reply_to(message, "Error in format, make sure you are in a correct format.")
 
 @bot.message_handler(func=lambda m: True)
 def search(message):
-    query_msg = message.text.lower()
+    query_msg = message.text
     result = requests.get(LOKLAK_API_URL.format(query=query_msg))
     try:
         tweets = json.loads(result.text)['statuses']
